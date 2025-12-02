@@ -1,31 +1,38 @@
+;; Window switching
+(global-set-key (kbd "M-o") 'other-window)
+
+;; Use spaces instead of tabs
+(setq-default indent-tabs-mode nil)
+
+;; Remove anything that could encourage mouse use and weakness
+(menu-bar-mode -1)    ;; Removes the top menu bar
+(tool-bar-mode -1)    ;; Removes the button toolbar
+(scroll-bar-mode -1)  ;; Removes the right scroll bar
+
+;; Disable aggressive tab completion (Emacs default behavior)
+(setq completion-auto-help 'lazy)
+(setq completion-auto-select nil)
+(setq completion-styles '(basic partial-completion emacs22))
+
+;; Clean file complete
+(setq minibuffer-auto-raise t)
+
 ;; Package setup
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 
 ;; Install packages if needed
-(dolist (pkg '(consult marginalia orderless embark embark-consult))
+(dolist (pkg '(consult marginalia orderless embark embark-consult vertico))
   (unless (package-installed-p pkg)
     (package-install pkg)))
 
-;; Clean file complete
-(setq minibuffer-auto-raise t)
-
-;; Use icomplete but disable the directory-deletion behavior
-(icomplete-mode 1)
-(icomplete-vertical-mode 1)
-(with-eval-after-load 'icomplete
-  (define-key icomplete-minibuffer-map (kbd "DEL") 
-    'delete-backward-char)
-  (define-key icomplete-minibuffer-map (kbd "<backspace>") 
-    'delete-backward-char))
-(setq icomplete-separator "\n")
-(setq completion-auto-help nil)
-(advice-add 'minibuffer-completion-help :around
-            (lambda (orig-fun &rest args)
-              (if icomplete-mode
-                  nil  ; Do nothing in icomplete-mode
-                (apply orig-fun args))))
+;; Vertico - incremental completion
+(require 'vertico)
+(vertico-mode 1)
+(setq vertico-count 10
+      vertico-resize nil
+      vertico-cycle nil)
 
 ;; Marginalia - annotations in completion
 (require 'marginalia)
@@ -69,9 +76,6 @@
 (require 'embark-consult)
 (global-set-key (kbd "C-;") 'embark-act)
 
-;; Window switching
-(global-set-key (kbd "M-o") 'other-window)
-
 ;; Eglot for LSP (Emacs 29+, or install from package)
 (add-hook 'python-mode-hook 'eglot-ensure)        ; python-lsp-server or pyright
 (add-hook 'c++-mode-hook 'eglot-ensure)           ; clangd
@@ -83,19 +87,6 @@
 ;; Performance tweaks
 (setq gc-cons-threshold 100000000)
 (setq read-process-output-max (* 1024 1024))
-
-;; Use spaces instead of tabs
-(setq-default indent-tabs-mode nil)
-
-;; Remove anything that could encourage mouse use and weakness
-(menu-bar-mode -1)    ;; Removes the top menu bar
-(tool-bar-mode -1)    ;; Removes the button toolbar
-(scroll-bar-mode -1)  ;; Removes the right scroll bar
-
-;; Disable aggressive tab completion (Emacs default behavior)
-(setq completion-auto-help 'lazy)
-(setq completion-auto-select nil)
-(setq completion-styles '(basic partial-completion emacs22))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
