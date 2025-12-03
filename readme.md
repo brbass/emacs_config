@@ -36,6 +36,13 @@ npm install -g pyright
 npm install -g bash-language-server
 ```
 
+### Back up your existing config if needed
+
+```bash
+mv .emacs .emacs.backup
+mv .emacs.d .emacs.d.backup
+```
+
 ### Clone this package
 
 ```bash
