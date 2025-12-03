@@ -1,5 +1,6 @@
-;; Window switching
-(global-set-key (kbd "M-o") 'other-window)
+;;----------------------;;
+;; General key bindings ;;
+;;----------------------;;
 
 ;; Use spaces instead of tabs
 (setq-default indent-tabs-mode nil)
@@ -9,23 +10,39 @@
 (tool-bar-mode -1)    ;; Removes the button toolbar
 (scroll-bar-mode -1)  ;; Removes the right scroll bar
 
-;; Disable aggressive tab completion (Emacs default behavior)
-(setq completion-auto-help 'lazy)
-(setq completion-auto-select nil)
-(setq completion-styles '(basic partial-completion emacs22))
-
 ;; Clean file complete
 (setq minibuffer-auto-raise t)
 
-;; Package setup
+;;-----------------;;
+;; Set up packages ;;
+;;-----------------;;
+
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 
-;; Install packages if needed
-(dolist (pkg '(consult marginalia orderless embark embark-consult vertico))
+(dolist (pkg '(ace-window
+               consult
+               consult-ls-git
+               embark
+               embark-consult
+               flycheck
+               lsp-mode
+               lsp-pyright
+               lsp-treemacs
+               lsp-ui
+               marginalia
+               orderless
+               vertico))
   (unless (package-installed-p pkg)
     (package-install pkg)))
+
+;; Ace window for switching windows easily
+(require 'ace-window)
+(setq aw-scope 'frame)
+(global-set-key (kbd "M-o") #'ace-window)
+(with-eval-after-load 'term
+  (define-key term-raw-map (kbd "M-o") #'ace-window))
 
 ;; Vertico - incremental completion
 (require 'vertico)
@@ -33,6 +50,7 @@
 (setq vertico-count 10
       vertico-resize nil
       vertico-cycle nil)
+(keymap-set vertico-map "TAB" #'minibuffer-complete)
 
 ;; Marginalia - annotations in completion
 (require 'marginalia)
@@ -42,51 +60,87 @@
 (require 'orderless)
 (setq completion-styles '(orderless basic)
       completion-category-defaults nil
-      completion-category-overrides '((file (styles orderless partial-completion))))
+      completion-category-overrides '((file (styles orderless partial-completion)))
+      completion-styles '(basic substring partial-completion flex)
+      completion-pcm-leading-wildcard t)
 
 ;; Consult for better search commands
 (require 'consult)
-(defun consult-git-files ()
-  "Select a Git-tracked file, ranked by basename first."
-  (interactive)
-  (let ((default-directory (or (locate-dominating-file default-directory ".git")
-                               default-directory)))
-    (unless (file-directory-p (concat default-directory ".git"))
-      (user-error "Not inside a Git repository"))
-    (let* ((files (split-string (shell-command-to-string "git ls-files") "\n" t))
-           ;; Sort files by basename alphabetically
-           (sorted-files
-            (sort files
-                  (lambda (a b)
-                    (string-lessp (file-name-nondirectory a)
-                                  (file-name-nondirectory b))))))
-      (consult--read sorted-files
-                     :prompt "Git files: "
-                     :require-match t
-                     :sort nil
-                     :history 'file-name-history
-                     :category 'file
-                     :state (consult--file-state)))))
-(global-set-key (kbd "C-c s") 'consult-ripgrep)     ; Search in project with ripgrep
-(global-set-key (kbd "C-c l") 'consult-line)        ; Search lines in current buffer
-(global-set-key (kbd "C-c f") 'consult-git-files)        ; Find files (git-aware)
+(require 'consult-ls-git)
+(global-set-key (kbd "C-c g") 'consult-ripgrep)         ; Search in project with ripgrep
+(global-set-key (kbd "C-c s") 'consult-git-grep)        ; Search in project with git grep
+(global-set-key (kbd "C-c l") 'consult-line)            ; Search lines in current buffer
+(global-set-key (kbd "C-c f") 'consult-ls-git-ls-files) ; Find files (git-aware)
 
 ;; Acting on selected files
 (require 'embark)
 (require 'embark-consult)
 (global-set-key (kbd "C-;") 'embark-act)
 
-;; Eglot for LSP (Emacs 29+, or install from package)
-(add-hook 'python-mode-hook 'eglot-ensure)        ; python-lsp-server or pyright
-(add-hook 'c++-mode-hook 'eglot-ensure)           ; clangd
-(add-hook 'c-mode-hook 'eglot-ensure)             ; clangd
-(add-hook 'fortran-mode-hook 'eglot-ensure)       ; fortls
-(add-hook 'f90-mode-hook 'eglot-ensure)           ; fortls (for modern Fortran)
-(add-hook 'sh-mode-hook 'eglot-ensure)            ; bash-language-server
+;; Language server support
+(require 'lsp-mode)
+(setq lsp-prefer-flymake nil  ; Use flycheck instead of flymake
+      lsp-session-file nil    ; Do not save LSP session to disk
+      lsp-log-io nil)         ; No logging, as this hurts performance   
+(add-hook 'python-mode-hook  'lsp-deferred)  ;; python-lsp-server or pyright
+(add-hook 'c++-mode-hook     'lsp-deferred)  ;; clangd
+(add-hook 'c-mode-hook       'lsp-deferred)  ;; clangd
+(add-hook 'fortran-mode-hook 'lsp-deferred)  ;; fortls
+(add-hook 'f90-mode-hook     'lsp-deferred)  ;; fortls (modern Fortran)
+(add-hook 'sh-mode-hook      'lsp-deferred)  ;; bash-language-server
+(global-set-key (kbd "M-'") 'lsp-find-references)
 
-;; Performance tweaks
-(setq gc-cons-threshold 100000000)
-(setq read-process-output-max (* 1024 1024))
+(require 'lsp-pyright)   ;; LSP wasn't finding pyright on its own
+(require 'lsp-treemacs)  ;; tree-based UI (symbols, errors, hierarchy)
+(require 'lsp-ui)        ;; sideline, documentation popups, peek UI
+(require 'flycheck)      ;; linting via flycheck
+
+;;--------------------;;
+;; Performance tuning ;;
+;;--------------------;;
+
+(setq gc-cons-threshold (* 500 1024 1024))      ;; GC threshold 500 MB
+(setq gc-cons-percentage 0.2)                   ;; GC percentage
+(setq read-process-output-max (* 1 1024 1024))  ;; Read subprocess max 1 MB
+(setq large-file-warning-threshold (* 500 1024 1024)) ;; Warn for files >500 MB
+
+(setq bidi-display-reordering 'left-to-right     ;; Disable expensive bidi
+      bidi-paragraph-direction 'left-to-right)
+(setq redisplay-skip-fontification-on-input t    ;; Skip fontification while typing
+      vc-handled-backends '(Git)                 ;; Only handle Git
+      file-notify-watch-descriptor-max 10000)   ;; More file notifications
+(setq font-lock-maximum-size 2000000)          ;; No font-lock for very large buffers
+
+;; Defer GC during minibuffer input
+(add-hook 'minibuffer-setup-hook
+          (lambda () (setq gc-cons-threshold most-positive-fixnum)))
+(add-hook 'minibuffer-exit-hook
+          (lambda () (setq gc-cons-threshold (* 500 1024 1024))))
+
+;; Native compilation settings (if available)
+(when (featurep 'native-compile)
+  (setq native-comp-async-report-warnings-errors 'silent))
+
+;;-----------------------;;
+;; Check for local files ;;
+;;-----------------------;;
+
+(defun my/host-arch ()
+  "Return a simple host descriptor like ubuntu24_04."
+  (let* ((os (string-trim (shell-command-to-string "lsb_release -is | tr '[:upper:]' '[:lower:]'")))
+         (ver (string-trim (shell-command-to-string "lsb_release -rs | tr '.' '_'"))))
+    (format "%s%s" os ver)))
+
+;; Load machine-specific init file if it exists
+(let ((host-init-file (expand-file-name
+                       (format "init.%s.el" (my/host-arch))
+                       user-emacs-directory)))
+  (when (file-exists-p host-init-file)
+    (load-file host-init-file)))
+
+;;---------------------------;;
+;; Stuff I didn't add myself ;;
+;;---------------------------;;
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
