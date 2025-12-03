@@ -27,13 +27,17 @@ make install
 export PATH="/path/to/emacs-30.2/install/bin:$PATH"
 ```
 
-### Install LSP servers
+### Install required packages
 
 ```bash
+# Language servers
 sudo apt install clangd
 sudo apt install fortran-language-server
 npm install -g pyright
 npm install -g bash-language-server
+
+# Search tools
+sudo apt install ripgrep
 ```
 
 ### Back up your existing config if needed
