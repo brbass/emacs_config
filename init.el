@@ -13,6 +13,16 @@
 ;; Clean file complete
 (setq minibuffer-auto-raise t)
 
+;; Reload file quickly
+(defun my/revert-buffer ()
+  "Revert buffer from disk. Ask for confirmation only if buffer has unsaved changes."
+  (interactive)
+  (if (buffer-modified-p)
+      (when (yes-or-no-p "Buffer has unsaved changes. Revert anyway? ")
+        (revert-buffer :ignore-auto :noconfirm))
+    (revert-buffer :ignore-auto :noconfirm)))
+(global-set-key (kbd "C-c r") 'my/revert-buffer)
+
 ;;-----------------;;
 ;; Set up packages ;;
 ;;-----------------;;
@@ -22,18 +32,20 @@
 (package-initialize)
 
 (dolist (pkg '(ace-window
+               ;; gruvbox-theme
+               nordic-night-theme
                consult
                consult-ls-git
                embark
                embark-consult
+               marginalia
+               orderless
+               vertico
                flycheck
                lsp-mode
                lsp-pyright
                lsp-treemacs
-               lsp-ui
-               marginalia
-               orderless
-               vertico))
+               lsp-ui))
   (unless (package-installed-p pkg)
     (package-install pkg)))
 
@@ -44,12 +56,23 @@
 (with-eval-after-load 'term
   (define-key term-raw-map (kbd "M-o") #'ace-window))
 
+;; Better color theme
+;; (require 'gruvbox-theme)
+;; (load-theme 'gruvbox-dark-hard t)
+(require 'nordic-night-theme)
+(load-theme 'nordic-night t)
+
 ;; Vertico - incremental completion
 (require 'vertico)
 (vertico-mode 1)
-(setq vertico-count 10
+(setq vertico-count 30
       vertico-resize nil
       vertico-cycle nil)
+;; (vertico-buffer-mode 1)
+;; (setq vertico-buffer-display-action
+;;       '(display-buffer-in-side-window
+;;         (side . left)
+;;         (window-width . 0.3)))
 (keymap-set vertico-map "TAB" #'minibuffer-complete)
 
 ;; Marginalia - annotations in completion
@@ -82,12 +105,12 @@
 (setq lsp-prefer-flymake nil  ; Use flycheck instead of flymake
       lsp-session-file nil    ; Do not save LSP session to disk
       lsp-log-io nil)         ; No logging, as this hurts performance   
-(add-hook 'python-mode-hook  'lsp-deferred)  ;; python-lsp-server or pyright
-(add-hook 'c++-mode-hook     'lsp-deferred)  ;; clangd
-(add-hook 'c-mode-hook       'lsp-deferred)  ;; clangd
-(add-hook 'fortran-mode-hook 'lsp-deferred)  ;; fortls
-(add-hook 'f90-mode-hook     'lsp-deferred)  ;; fortls (modern Fortran)
-(add-hook 'sh-mode-hook      'lsp-deferred)  ;; bash-language-server
+;; (add-hook 'python-mode-hook  'lsp-deferred)  ;; python-lsp-server or pyright
+;; (add-hook 'c++-mode-hook     'lsp-deferred)  ;; clangd
+;; (add-hook 'c-mode-hook       'lsp-deferred)  ;; clangd
+;; (add-hook 'fortran-mode-hook 'lsp-deferred)  ;; fortls
+;; (add-hook 'f90-mode-hook     'lsp-deferred)  ;; fortls (modern Fortran)
+;; (add-hook 'sh-mode-hook      'lsp-deferred)  ;; bash-language-server
 (global-set-key (kbd "M-'") 'lsp-find-references)
 
 (require 'lsp-pyright)   ;; LSP wasn't finding pyright on its own
