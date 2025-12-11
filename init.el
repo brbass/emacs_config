@@ -55,22 +55,34 @@
 ;;-----------------------------;;
 ;; Run commands in minibuffers ;;
 ;;-----------------------------;;
-(defun async-send-current-line (&optional buffer-name)
-  "Send the current line to an async shell command, showing output in BUFFER-NAME."
+(defun my/async-shell-buffer-name (command)
+  "Return a sanitized buffer name for COMMAND."
+  (format "*%s*" (replace-regexp-in-string "[ \t\n]" "_" command)))
+(defun my/async-send-current-line ()
+  "Send the current line to an async shell command, showing output in a buffer named after the command."
   (interactive)
   (let* ((line (thing-at-point 'line t))
-         (buf (or buffer-name "*Async Shell Output*")))
+         (buf (my/async-shell-buffer-name line)))
     (async-shell-command line buf)))
-
-(defun async-send-current-region (start end &optional buffer-name)
-  "Send the current region to an async shell command, showing output in BUFFER-NAME."
+(defun my/async-send-current-region (start end)
+  "Send the current region to an async shell command, showing output in a buffer named after the command."
   (interactive "r")
   (let* ((region-text (buffer-substring-no-properties start end))
-         (buf (or buffer-name "*Async Shell Output*")))
+         (buf (my/async-shell-buffer-name region-text)))
     (async-shell-command region-text buf)))
+(defun my/async-shell-command (command)
+  "Run COMMAND asynchronously, using a buffer named after the command."
+  (interactive
+   ;; Preserve original async-shell-command minibuffer behavior with completion and history
+   (list (read-shell-command "Async shell command: "
+                             nil 'shell-command-history)))
+  ;; Run async-shell-command but override the buffer name
+  (let ((buf (format "*%s*" (replace-regexp-in-string "[ \t\n]" "_" command))))
+    (async-shell-command command buf)))
 
-(global-set-key (kbd "M-*") 'async-send-current-region)
-(global-set-key (kbd "M-|") 'async-send-current-line)
+(global-set-key (kbd "M-*") 'my/async-send-current-region)
+(global-set-key (kbd "M-|") 'my/async-send-current-line)
+(global-set-key (kbd "M-&") 'my/async-shell-command)
 
 ;;-----------------;;
 ;; Set up packages ;;
@@ -82,13 +94,14 @@
 
 (dolist (pkg '(ace-window
                ztree
-               ;; terminal things
+               magit
+               ;; Terminal
                vterm
                direnv
-               ;; themes
+               ;; Themes
                ;; gruvbox-theme
                nordic-night-theme
-               ;; minibuffer changes
+               ;; Minibuffer changes
                consult
                consult-ls-git
                embark
@@ -96,7 +109,7 @@
                marginalia
                orderless
                vertico
-               ;; lsp things
+               ;; LSP
                flycheck
                lsp-mode
                lsp-pyright
@@ -114,6 +127,9 @@
 
 ;; Recursive tree comparison: M-x ztree-diff
 (require 'ztree)
+
+;; For using git in emacs
+(require 'magit)
 
 ;; Performant terminal emulator
 (require 'vterm)
