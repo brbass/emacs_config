@@ -142,6 +142,8 @@
 
 ;; Performant terminal emulator
 (require 'vterm)
+(define-key vterm-mode-map (kbd "C-c C-j") 'vterm-copy-mode)
+(define-key vterm-copy-mode-map (kbd "C-c C-k") #'vterm-copy-mode)
 
 ;; For automatically loading direnv
 (require 'direnv)
