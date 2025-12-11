@@ -62,8 +62,9 @@
       (goto-char (point-min))
       (insert (format "$ %s\n\n" command)))))
 (defun my/async-shell-buffer-name (command)
-  "Return a sanitized buffer name for COMMAND."
-  (format "*%s*" (replace-regexp-in-string "[ \t\n]" "_" command)))
+  "Return a buffer name based on COMMAND, stripping leading spaces."
+  (let ((trimmed (string-trim-left command)))
+    trimmed))
 (defun my/async-send-current-line ()
   "Send the current line to an async shell command, showing output in a buffer named after the command."
   (interactive)
@@ -87,6 +88,10 @@
 (global-set-key (kbd "M-*") 'my/async-send-current-region)
 (global-set-key (kbd "M-|") 'my/async-send-current-line)
 (global-set-key (kbd "M-&") 'my/async-shell-command)
+
+;; This imports bash variables for use in the shell
+(setq shell-file-name "bash")
+(setq shell-command-switch "-ic")
 
 ;;-----------------;;
 ;; Set up packages ;;
