@@ -52,6 +52,26 @@
 ;; Use minibuffers in minibuffers!
 (setf enable-recursive-minibuffers t)
 
+;;-----------------------------;;
+;; Run commands in minibuffers ;;
+;;-----------------------------;;
+(defun async-send-current-line (&optional buffer-name)
+  "Send the current line to an async shell command, showing output in BUFFER-NAME."
+  (interactive)
+  (let* ((line (thing-at-point 'line t))
+         (buf (or buffer-name "*Async Shell Output*")))
+    (async-shell-command line buf)))
+
+(defun async-send-current-region (start end &optional buffer-name)
+  "Send the current region to an async shell command, showing output in BUFFER-NAME."
+  (interactive "r")
+  (let* ((region-text (buffer-substring-no-properties start end))
+         (buf (or buffer-name "*Async Shell Output*")))
+    (async-shell-command region-text buf)))
+
+(global-set-key (kbd "M-*") 'async-send-current-region)
+(global-set-key (kbd "M-|") 'async-send-current-line)
+
 ;;-----------------;;
 ;; Set up packages ;;
 ;;-----------------;;
