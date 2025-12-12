@@ -59,3 +59,12 @@ git clone https://github.com/brbass/.emacs.d.git ~/.emacs.d
 ## Features to add:
 
 - File preview when using find-file
+
+## Other setup nodes
+
+- If a package is not found, run `M-x package-refresh-contents` and try opening emacs again. 
+- Not emacs-related, but the ghostty terminal needs the following fix for using ssh:
+```bash
+infocmp -x xterm-ghostty | ssh YOUR-SERVER -- tic -x -
+```
+
