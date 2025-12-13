@@ -1,6 +1,8 @@
 ;;----------------------;;
 ;; General key bindings ;;
 ;;----------------------;;
+;; No startup screen
+(setq inhibit-startup-screen t)
 
 ;; Use spaces instead of tabs
 (setq-default indent-tabs-mode nil)
@@ -57,10 +59,11 @@
 ;;-----------------------------;;
 (defun my/get-key (key)
   "Return the nearest preceding value of KEY in a Markdown buffer.
-KEY should be a string like \"dir\" or \"path\".
-Only searches Markdown buffers and returns a valid directory if applicable."
+KEY should be a string like \"dir:\" or \"path:\".
+Only searches Markdown buffers and returns only a valid directory if applicable."
   (when (derived-mode-p 'markdown-mode 'gfm-mode)
     (save-excursion
+      ;; Search for the key
       (when (re-search-backward (format "^%s:[[:space:]]*\\(.*\\)$" (regexp-quote key)) nil t)
         (let ((val (string-trim (match-string 1))))
           ;; For keys representing directories, validate they exist
@@ -70,6 +73,7 @@ Only searches Markdown buffers and returns a valid directory if applicable."
             val))))))
 (defmacro my/with-data-keys (&rest body)
   "Execute BODY in dir: and path: from Markdown buffer if present."
+  ;; Store the original variables and get the new ones
   `(let ((orig-dir default-directory)
          (dir (my/get-key "dir"))
          (new-path (my/get-key "path"))
@@ -79,6 +83,7 @@ Only searches Markdown buffers and returns a valid directory if applicable."
            ;; If dir and path exist, then set them
            (when dir (setq default-directory dir))
            (when new-path (setenv "PATH" (concat new-path ":" old-path)))
+           ;; Run the command
            ,@body)
        ;; If dir and path exist, then restore the original values
        (when new-path (setenv "PATH" old-path))
@@ -116,6 +121,7 @@ Only searches Markdown buffers and returns a valid directory if applicable."
    (let ((buf (my/async-shell-buffer-name command)))
      (async-shell-command command buf))))
 
+;; Bind them!
 (global-set-key (kbd "M-*") 'my/async-send-current-region)
 (global-set-key (kbd "M-|") 'my/async-send-current-line)
 (global-set-key (kbd "M-&") 'my/async-shell-command)
@@ -230,7 +236,7 @@ Only searches Markdown buffers and returns a valid directory if applicable."
 (global-set-key (kbd "C-c l") 'consult-line)            ; Search lines in current buffer
 (global-set-key (kbd "C-c f") 'consult-ls-git-ls-files) ; Find files (git-aware)
 
-;; Language server support
+;; Language server support (uncomment the hooks for auto-load)
 (require 'lsp-mode)
 (setq lsp-prefer-flymake nil  ; Use flycheck instead of flymake
       lsp-session-file nil    ; Do not save LSP session to disk
@@ -296,20 +302,6 @@ Only searches Markdown buffers and returns a valid directory if applicable."
   (when (file-exists-p host-init-file)
     (load-file host-init-file)))
 
-;;---------------------------;;
-;; Stuff I didn't add myself ;;
-;;---------------------------;;
-
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(inhibit-startup-screen t)
- '(package-selected-packages nil))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+;;-------------------------------------;;
+;; Section for things added at runtime ;;
+;;-------------------------------------;;
