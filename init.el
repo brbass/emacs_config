@@ -130,6 +130,34 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 (setq shell-file-name "bash")
 (setq shell-command-switch "-ic")
 
+;;--------------------;;
+;; Performance tuning ;;
+;;--------------------;;
+(setq gc-cons-threshold (* 500 1024 1024))      ;; GC threshold 500 MB
+(setq gc-cons-percentage 0.2)                   ;; GC percentage
+(setq large-file-warning-threshold (* 500 1024 1024)) ;; Warn for files >500 MB
+
+(setq bidi-display-reordering 'left-to-right     ;; Disable expensive bidi
+      bidi-paragraph-direction 'left-to-right)
+(setq redisplay-skip-fontification-on-input t    ;; Skip fontification while typing
+      vc-handled-backends '(Git)                 ;; Only handle Git
+      file-notify-watch-descriptor-max 10000)   ;; More file notifications
+(setq font-lock-maximum-size 2000000)          ;; No font-lock for very large buffers
+
+;; Defer GC during minibuffer input
+(add-hook 'minibuffer-setup-hook
+          (lambda () (setq gc-cons-threshold most-positive-fixnum)))
+(add-hook 'minibuffer-exit-hook
+          (lambda () (setq gc-cons-threshold (* 500 1024 1024))))
+
+;; Native compilation settings (if available)
+(when (featurep 'native-compile)
+  (setq native-comp-async-report-warnings-errors 'silent))
+
+;; Subprocess settings
+(setq read-process-output-max (* 64 1024 1024))  ;; Read subprocess max 64 MB
+(setq process-adaptive-read-buffering nil)
+
 ;;-----------------;;
 ;; Set up packages ;;
 ;;-----------------;;
@@ -138,8 +166,7 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 
-(dolist (pkg '(benchmark-init
-               ace-window
+(dolist (pkg '(ace-window
                ztree
                magit
                ;; Terminal
@@ -164,10 +191,6 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
                lsp-ui))
   (unless (package-installed-p pkg)
     (package-install pkg)))
-
-;; Timing
-(require 'benchmark-init)
-(add-hook 'after-init-hook 'benchmark-init/deactivate)
 
 ;; Ace window for switching windows easily
 (require 'ace-window)
@@ -216,9 +239,9 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 
 ;; Orderless - flexible matching
 (require 'orderless)
-(setq completion-styles '(orderless basic)
-      completion-category-defaults nil
+(setq completion-category-defaults nil
       completion-category-overrides '((file (styles orderless partial-completion)))
+      ;; completion-styles '(orderless basic)
       completion-styles '(basic substring partial-completion flex)
       completion-pcm-leading-wildcard t)
 
@@ -255,35 +278,6 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 (require 'lsp-treemacs)  ;; tree-based UI (symbols, errors, hierarchy)
 (require 'lsp-ui)        ;; sideline, documentation popups, peek UI
 (require 'flycheck)      ;; linting via flycheck
-
-;;--------------------;;
-;; Performance tuning ;;
-;;--------------------;;
-
-(setq gc-cons-threshold (* 500 1024 1024))      ;; GC threshold 500 MB
-(setq gc-cons-percentage 0.2)                   ;; GC percentage
-(setq large-file-warning-threshold (* 500 1024 1024)) ;; Warn for files >500 MB
-
-(setq bidi-display-reordering 'left-to-right     ;; Disable expensive bidi
-      bidi-paragraph-direction 'left-to-right)
-(setq redisplay-skip-fontification-on-input t    ;; Skip fontification while typing
-      vc-handled-backends '(Git)                 ;; Only handle Git
-      file-notify-watch-descriptor-max 10000)   ;; More file notifications
-(setq font-lock-maximum-size 2000000)          ;; No font-lock for very large buffers
-
-;; Defer GC during minibuffer input
-(add-hook 'minibuffer-setup-hook
-          (lambda () (setq gc-cons-threshold most-positive-fixnum)))
-(add-hook 'minibuffer-exit-hook
-          (lambda () (setq gc-cons-threshold (* 500 1024 1024))))
-
-;; Native compilation settings (if available)
-(when (featurep 'native-compile)
-  (setq native-comp-async-report-warnings-errors 'silent))
-
-;; Subprocess settings
-(setq read-process-output-max (* 64 1024 1024))  ;; Read subprocess max 64 MB
-(setq process-adaptive-read-buffering nil)
 
 ;;-----------------------;;
 ;; Check for local files ;;
