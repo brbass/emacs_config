@@ -41,7 +41,7 @@
       (when (yes-or-no-p "Buffer has unsaved changes. Revert anyway? ")
         (revert-buffer :ignore-auto :noconfirm))
     (revert-buffer :ignore-auto :noconfirm)))
-(global-set-key (kbd "C-c C-r") 'my/revert-buffer)
+(global-set-key (kbd "C-c r") 'my/revert-buffer)
 
 ;; Make sure we only have one thread in eshell
 (add-hook 'eshell-mode-hook
@@ -299,3 +299,15 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 ;;-------------------------------------;;
 ;; Section for things added at runtime ;;
 ;;-------------------------------------;;
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(safe-local-variable-values '((eval outline-hide-body))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
