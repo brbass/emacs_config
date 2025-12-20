@@ -191,8 +191,6 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
                lsp-pyright
                lsp-treemacs
                lsp-ui
-               ;; LLM integration
-               eca
                ))
   (unless (package-installed-p pkg)
     (package-install pkg)))
@@ -283,18 +281,6 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 (require 'lsp-treemacs)  ;; tree-based UI (symbols, errors, hierarchy)
 (require 'lsp-ui)        ;; sideline, documentation popups, peek UI
 (require 'flycheck)      ;; linting via flycheck
-
-(require 'eca)
-(setq eca-server-download-method 'curl)
-(defun my/eca-install-server ()
-  "In case standard ECA install doesn't work"
-  (interactive)
-  (setq eca-server-download-url
-        "https://github.com/editor-code-assistant/eca/releases/latest/download/eca-native-linux-amd64.zip")
-  (setq eca-unzip-script (lambda () "unzip %s -d %s"))
-  (eca-process--download-server
-   (lambda () (message "ECA server installed successfully!"))
-   "latest"))
 
 ;;-----------------------;;
 ;; Check for local files ;;
