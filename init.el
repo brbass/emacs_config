@@ -81,13 +81,19 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
      (unwind-protect
          (progn
            ;; If dir and path exist, then set them
-           (when dir (setq default-directory dir))
+           (when dir
+             (setq default-directory dir)
+             (when (fboundp 'direnv-update-environment)
+               (direnv-update-environment)))
            (when new-path (setenv "PATH" (concat new-path ":" old-path)))
            ;; Run the command
            ,@body)
        ;; If dir and path exist, then restore the original values
        (when new-path (setenv "PATH" old-path))
-       (when dir (setq default-directory orig-dir)))))
+       (when dir
+         (setq default-directory orig-dir)
+         (when (fboundp 'direnv-update-environment)
+           (direnv-update-environment))))))
 (defun my/async-shell-insert-command-header (buf command)
   "Insert COMMAND as a header at the top of BUF."
   (with-current-buffer buf
@@ -221,6 +227,7 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 (require 'vterm)
 (define-key vterm-mode-map (kbd "C-c C-j") 'vterm-copy-mode)
 (define-key vterm-copy-mode-map (kbd "C-c C-k") #'vterm-copy-mode)
+(vterm-send-key "<escape>")
 
 ;; For automatically loading direnv
 (require 'direnv)
