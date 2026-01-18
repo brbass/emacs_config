@@ -289,6 +289,7 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 ;; (add-hook 'fortran-mode-hook 'lsp-deferred)  ;; fortls
 ;; (add-hook 'f90-mode-hook     'lsp-deferred)  ;; fortls (modern Fortran)
 ;; (add-hook 'sh-mode-hook      'lsp-deferred)  ;; bash-language-server
+;; (add-hook 'rust-mode-hook    'lsp-deferred)  ;; rust-analyzer
 (global-set-key (kbd "M-'") 'lsp-find-references)
 (setq lsp-enable-on-type-formatting nil)  ;; Disable format on typing
 (setq lsp-enable-indentation nil)         ;; Disable LSP auto-indentation

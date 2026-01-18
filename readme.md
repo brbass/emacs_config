@@ -36,6 +36,7 @@ sudo apt install clangd
 sudo apt install fortran-language-server
 npm install -g pyright
 npm install -g bash-language-server
+rustup component add rust-analyzer
 
 # Search tools
 sudo apt install ripgrep
