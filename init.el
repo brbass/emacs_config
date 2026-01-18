@@ -1,30 +1,22 @@
-;;--------------------;;
-;; Performance tuning ;;
-;;--------------------;;
-(setq gc-cons-threshold (* 200 1024 1024))      ;; GC threshold 200 MB
-(setq gc-cons-percentage 0.2)                   ;; GC percentage
-(setq large-file-warning-threshold (* 500 1024 1024)) ;; Warn for files >500 MB
-
-(setq bidi-display-reordering 'left-to-right     ;; Disable expensive bidi
-      bidi-paragraph-direction 'left-to-right)
-(setq redisplay-skip-fontification-on-input t    ;; Skip fontification while typing
-      vc-handled-backends '(Git)                 ;; Only handle Git
-      file-notify-watch-descriptor-max 10000)   ;; More file notifications
-(setq font-lock-maximum-size 2000000)          ;; No font-lock for very large buffers
-
+;;-----------------;;
+;; Deferred tuning ;;
+;;-----------------;;
 ;; Defer GC during minibuffer input
 (add-hook 'minibuffer-setup-hook
           (lambda () (setq gc-cons-threshold most-positive-fixnum)))
 (add-hook 'minibuffer-exit-hook
-          (lambda () (setq gc-cons-threshold (* 500 1024 1024))))
+          (lambda () (setq gc-cons-threshold (* 32 1024 1024))))
 
 ;; Native compilation settings (if available)
 (when (featurep 'native-compile)
   (setq native-comp-async-report-warnings-errors 'silent))
 
-;; Subprocess settings
-(setq read-process-output-max (* 64 1024 1024))  ;; Read subprocess max 64 MB
-(setq process-adaptive-read-buffering nil)
+;; Print out how long Emacs took to load
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "Emacs ready in %s (%d GCs)"
+                     (emacs-init-time)
+                     gcs-done)))
 
 ;;----------------------;;
 ;; General key bindings ;;
