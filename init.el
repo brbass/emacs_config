@@ -1,3 +1,31 @@
+;;--------------------;;
+;; Performance tuning ;;
+;;--------------------;;
+(setq gc-cons-threshold (* 200 1024 1024))      ;; GC threshold 200 MB
+(setq gc-cons-percentage 0.2)                   ;; GC percentage
+(setq large-file-warning-threshold (* 500 1024 1024)) ;; Warn for files >500 MB
+
+(setq bidi-display-reordering 'left-to-right     ;; Disable expensive bidi
+      bidi-paragraph-direction 'left-to-right)
+(setq redisplay-skip-fontification-on-input t    ;; Skip fontification while typing
+      vc-handled-backends '(Git)                 ;; Only handle Git
+      file-notify-watch-descriptor-max 10000)   ;; More file notifications
+(setq font-lock-maximum-size 2000000)          ;; No font-lock for very large buffers
+
+;; Defer GC during minibuffer input
+(add-hook 'minibuffer-setup-hook
+          (lambda () (setq gc-cons-threshold most-positive-fixnum)))
+(add-hook 'minibuffer-exit-hook
+          (lambda () (setq gc-cons-threshold (* 500 1024 1024))))
+
+;; Native compilation settings (if available)
+(when (featurep 'native-compile)
+  (setq native-comp-async-report-warnings-errors 'silent))
+
+;; Subprocess settings
+(setq read-process-output-max (* 64 1024 1024))  ;; Read subprocess max 64 MB
+(setq process-adaptive-read-buffering nil)
+
 ;;----------------------;;
 ;; General key bindings ;;
 ;;----------------------;;
@@ -53,6 +81,13 @@
 
 ;; Use minibuffers in minibuffers!
 ;; (setf enable-recursive-minibuffers t)
+
+;; Print out how long emacs took to load
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "Emacs ready in %s (%d GCs)"
+                     (emacs-init-time)
+                     gcs-done)))
 
 ;;-----------------------------;;
 ;; Run commands in minibuffers ;;
@@ -141,34 +176,6 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 ;; to the .dir-locals.el in the directory with a file
 (setq safe-local-variable-values '((eval outline-hide-body)))
 
-;;--------------------;;
-;; Performance tuning ;;
-;;--------------------;;
-(setq gc-cons-threshold (* 500 1024 1024))      ;; GC threshold 500 MB
-(setq gc-cons-percentage 0.2)                   ;; GC percentage
-(setq large-file-warning-threshold (* 500 1024 1024)) ;; Warn for files >500 MB
-
-(setq bidi-display-reordering 'left-to-right     ;; Disable expensive bidi
-      bidi-paragraph-direction 'left-to-right)
-(setq redisplay-skip-fontification-on-input t    ;; Skip fontification while typing
-      vc-handled-backends '(Git)                 ;; Only handle Git
-      file-notify-watch-descriptor-max 10000)   ;; More file notifications
-(setq font-lock-maximum-size 2000000)          ;; No font-lock for very large buffers
-
-;; Defer GC during minibuffer input
-(add-hook 'minibuffer-setup-hook
-          (lambda () (setq gc-cons-threshold most-positive-fixnum)))
-(add-hook 'minibuffer-exit-hook
-          (lambda () (setq gc-cons-threshold (* 500 1024 1024))))
-
-;; Native compilation settings (if available)
-(when (featurep 'native-compile)
-  (setq native-comp-async-report-warnings-errors 'silent))
-
-;; Subprocess settings
-(setq read-process-output-max (* 64 1024 1024))  ;; Read subprocess max 64 MB
-(setq process-adaptive-read-buffering nil)
-
 ;;-----------------;;
 ;; Set up packages ;;
 ;;-----------------;;
@@ -176,147 +183,160 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
-
 (package-initialize)
 
-(dolist (pkg '(
-               ;; General
-               ace-window
-               ztree
-               magit
-               ;; Terminal
-               vterm
-               direnv
-               ;; Themes
-               ;; gruvbox-theme
-               nordic-night-theme
-               ;; Minibuffer changes
-               consult
-               consult-ls-git
-               embark
-               embark-consult
-               marginalia
-               orderless
-               vertico
-               ;; LSP
-               flycheck
-               lsp-mode
-               lsp-pyright
-               lsp-treemacs
-               lsp-ui
-               ;; LLM support
-               agent-shell
-               ))
-  (unless (package-installed-p pkg)
-    (package-install pkg)))
+;; Bootstrap use-package
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(require 'use-package)
+(setq use-package-always-ensure t)
 
 ;; Ace window for switching windows easily
-(require 'ace-window)
-(setq aw-scope 'frame)
-(global-set-key (kbd "M-o") 'ace-window)
-(with-eval-after-load 'term
-  (define-key term-raw-map (kbd "M-o") 'ace-window))
+(use-package ace-window
+  :defer t
+  :bind (("M-o" . ace-window))
+  :init
+  (with-eval-after-load 'term
+    (define-key term-raw-map (kbd "M-o") 'ace-window))
+  :config
+  (setq aw-scope 'frame))
 
-;; Recursive tree comparison: M-x ztree-diff
-(require 'ztree)
+;; Recursive tree comparison
+(use-package ztree
+  :defer t
+  :commands (ztree-diff ztree-dir))
 
 ;; For using git in emacs
-(require 'magit)
+(use-package magit
+  :defer t
+  :commands (magit-status magit-dispatch magit-file-dispatch))
 
 ;; Performant terminal emulator
-(require 'vterm)
-(define-key vterm-mode-map (kbd "C-c C-j") 'vterm-copy-mode)
-(define-key vterm-copy-mode-map (kbd "C-c C-k") #'vterm-copy-mode)
-(vterm-send-key "<escape>")
+(use-package vterm
+  :defer t
+  :commands vterm
+  :bind (:map vterm-mode-map
+         ("C-c C-j" . vterm-copy-mode)
+         :map vterm-copy-mode-map
+         ("C-c C-k" . vterm-copy-mode)))
 
 ;; For automatically loading direnv
-(require 'direnv)
-(direnv-mode)
+(use-package direnv
+  :config
+  (direnv-mode))
 
 ;; Better color theme
-;; (require 'gruvbox-theme)
-;; (load-theme 'gruvbox-dark-hard t)
-(require 'nordic-night-theme)
-(load-theme 'nordic-night t)
+;; (use-package gruvbox-theme
+;;   :config
+;;   (load-theme 'gruvbox-dark-hard t))
+(use-package nordic-night-theme
+  :config
+  (load-theme 'nordic-night t))
 
 ;; Vertico - incremental completion
-(require 'vertico)
-(vertico-mode 1)
-(setq vertico-count 30
-      vertico-resize nil
-      vertico-cycle nil)
-;; (vertico-buffer-mode 1)
-;; (setq vertico-buffer-display-action
-;;       '(display-buffer-in-side-window
-;;         (side . left)
-;;         (window-width . 0.3)))
-(keymap-set vertico-map "TAB" #'minibuffer-complete)
+(use-package vertico
+  :init
+  (vertico-mode 1)
+  :config
+  (setq vertico-count 30
+        vertico-resize nil
+        vertico-cycle nil)
+  ;; (vertico-buffer-mode 1)
+  ;; (setq vertico-buffer-display-action
+  ;;       '(display-buffer-in-side-window
+  ;;         (side . left)
+  ;;         (window-width . 0.3)))
+  :bind (:map vertico-map
+         ("TAB" . minibuffer-complete)))
 
 ;; Marginalia - annotations in completion
-(require 'marginalia)
-(marginalia-mode)
+(use-package marginalia
+  :init
+  (marginalia-mode))
 
 ;; Orderless - flexible matching
-(require 'orderless)
-(setq completion-category-defaults nil
-      completion-category-overrides '((file (styles orderless partial-completion)))
-      ;; completion-styles '(orderless basic)
-      completion-styles '(basic substring partial-completion flex)
-      completion-pcm-leading-wildcard t)
+(use-package orderless
+  :custom
+  (completion-category-defaults nil)
+  (completion-category-overrides '((file (styles orderless partial-completion))))
+  ;; (completion-styles '(orderless basic))
+  (completion-styles '(basic substring partial-completion flex))
+  (completion-pcm-leading-wildcard t))
 
 ;; Acting on selected files
-(require 'embark)
-(require 'embark-consult)
-(global-set-key (kbd "C-c .") 'embark-act)
-(global-set-key (kbd "C-c ;") 'embark-export)
+(use-package embark
+  :defer t
+  :bind (("C-c ." . embark-act)
+         ("C-c ;" . embark-export)))
+
+(use-package embark-consult
+  :after embark)
 
 ;; Consult for better search commands
-(require 'consult)
-(require 'consult-ls-git)
-(global-set-key (kbd "C-c g") 'consult-ripgrep)         ; Search in project with ripgrep
-(global-set-key (kbd "C-c s") 'consult-git-grep)        ; Search in project with git grep
-(global-set-key (kbd "C-c l") 'consult-line)            ; Search lines in current buffer
-(global-set-key (kbd "C-c f") 'consult-ls-git-ls-files) ; Find files (git-aware)
+(use-package consult
+  :defer t
+  :bind (("C-c g" . consult-ripgrep)
+         ("C-c s" . consult-git-grep)
+         ("C-c l" . consult-line)))
 
-;; Language server support (uncomment the hooks for auto-load)
-(require 'lsp-mode)
-(setq lsp-prefer-flymake nil  ; Use flycheck instead of flymake
-      lsp-session-file nil    ; Do not save LSP session to disk
-      lsp-log-io nil)         ; No logging, as this hurts performance   
-;; (add-hook 'python-mode-hook  'lsp-deferred)  ;; python-lsp-server or pyright
-;; (add-hook 'c++-mode-hook     'lsp-deferred)  ;; clangd
-;; (add-hook 'c-mode-hook       'lsp-deferred)  ;; clangd
-;; (add-hook 'fortran-mode-hook 'lsp-deferred)  ;; fortls
-;; (add-hook 'f90-mode-hook     'lsp-deferred)  ;; fortls (modern Fortran)
-;; (add-hook 'sh-mode-hook      'lsp-deferred)  ;; bash-language-server
-;; (add-hook 'rust-mode-hook    'lsp-deferred)  ;; rust-analyzer
-(global-set-key (kbd "M-'") 'lsp-find-references)
-(setq lsp-enable-on-type-formatting nil)  ;; Disable format on typing
-(setq lsp-enable-indentation nil)         ;; Disable LSP auto-indentation
+(use-package consult-ls-git
+  :defer t
+  :bind (("C-c f" . consult-ls-git-ls-files)))
 
-(require 'lsp-pyright)   ;; LSP wasn't finding pyright on its own
-(require 'lsp-treemacs)  ;; tree-based UI (symbols, errors, hierarchy)
-(require 'lsp-ui)        ;; sideline, documentation popups, peek UI
-(require 'flycheck)      ;; linting via flycheck
+;; Language server support
+(use-package lsp-mode
+  :defer t
+  :commands (lsp lsp-deferred)
+  :bind (("M-'" . lsp-find-references))
+  :config
+  (setq lsp-prefer-flymake nil
+        lsp-session-file nil
+        lsp-log-io nil
+        lsp-enable-on-type-formatting nil
+        lsp-enable-indentation nil)
+  ;; Uncomment to enable LSP automatically in specific modes:
+  ;; :hook ((python-mode . lsp-deferred)
+  ;;        (c++-mode . lsp-deferred)
+  ;;        (c-mode . lsp-deferred)
+  ;;        (fortran-mode . lsp-deferred)
+  ;;        (f90-mode . lsp-deferred)
+  ;;        (sh-mode . lsp-deferred)
+  ;;        (rust-mode . lsp-deferred))
+  )
 
-(require 'agent-shell)
+(use-package lsp-pyright
+  :after lsp-mode)
+
+(use-package lsp-treemacs
+  :after lsp-mode)
+
+(use-package lsp-ui
+  :after lsp-mode)
+
+(use-package flycheck
+  :after lsp-mode)
+
+;; LLM support
+(use-package agent-shell
+  :defer t)
 
 ;;-----------------------;;
 ;; Check for local files ;;
 ;;-----------------------;;
 
-(defun my/host-arch ()
-  "Return a simple host descriptor like ubuntu24_04."
-  (let* ((os (string-trim (shell-command-to-string "lsb_release -is | tr '[:upper:]' '[:lower:]'")))
-         (ver (string-trim (shell-command-to-string "lsb_release -rs | tr '.' '_'"))))
-    (format "%s%s" os ver)))
+;; (defun my/host-arch ()
+;;   "Return a simple host descriptor like ubuntu24_04."
+;;   (let* ((os (string-trim (shell-command-to-string "lsb_release -is | tr '[:upper:]' '[:lower:]'")))
+;;          (ver (string-trim (shell-command-to-string "lsb_release -rs | tr '.' '_'"))))
+;;     (format "%s%s" os ver)))
 
-;; Load machine-specific init file if it exists
-(let ((host-init-file (expand-file-name
-                       (format "init.%s.el" (my/host-arch))
-                       user-emacs-directory)))
-  (when (file-exists-p host-init-file)
-    (load-file host-init-file)))
+;; ;; Load machine-specific init file if it exists
+;; (let ((host-init-file (expand-file-name
+;;                        (format "init.%s.el" (my/host-arch))
+;;                        user-emacs-directory)))
+;;   (when (file-exists-p host-init-file)
+;;     (load-file host-init-file)))
 
 ;;-------------------------------------;;
 ;; Section for things added at runtime ;;

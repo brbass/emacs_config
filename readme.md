@@ -7,6 +7,8 @@ This keeps mostly default emacs but adds the following:
 - Easier management of async shell commands
 - Performance tweaks
 
+Package loading is defered where possible to make startup fast. 
+
 ### Build emacs from source
 
 ```bash
