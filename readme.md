@@ -1,4 +1,6 @@
-## Emacs config
+# Emacs config
+
+## Features
 
 This keeps mostly default emacs but adds the following:
 - Language server support
@@ -8,7 +10,8 @@ This keeps mostly default emacs but adds the following:
 - Performance tweaks
 Package loading is defered where possible to make startup fast. 
 
-The commands are bound as follows:
+## Keyboard bindings
+
 ```lisp
 ;; General commands
 M-o ;; Switch between windows using ace-window
@@ -36,6 +39,8 @@ C-c l ;; grep over lines in current file
 ;; lsp commands
 M-' ;; Find references to variables
 ```
+
+## Installation
 
 ### Build emacs from source
 
@@ -92,7 +97,7 @@ git clone https://github.com/brbass/.emacs.d.git ~/.emacs.d
 
 - File preview when using find-file
 
-## Other setup nodes
+## Other setup notes
 
 - If a package is not found, run `M-x package-refresh-contents` and try opening emacs again. 
 - Not emacs-related, but the [ghostty terminal](https://ghostty.org/docs) needs the [following fix](https://ghostty.org/docs/help/terminfo#ssh) to use ssh:
