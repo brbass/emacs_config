@@ -74,13 +74,6 @@
 ;; Use minibuffers in minibuffers!
 ;; (setf enable-recursive-minibuffers t)
 
-;; Print out how long emacs took to load
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (message "Emacs ready in %s (%d GCs)"
-                     (emacs-init-time)
-                     gcs-done)))
-
 ;;-----------------------------;;
 ;; Run commands in minibuffers ;;
 ;;-----------------------------;;

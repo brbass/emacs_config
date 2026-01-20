@@ -6,8 +6,36 @@ This keeps mostly default emacs but adds the following:
 - Some changes to completion that keep things similar to default emacs
 - Easier management of async shell commands
 - Performance tweaks
-
 Package loading is defered where possible to make startup fast. 
+
+The commands are bound as follows:
+```lisp
+;; General commands
+M-o ;; Switch between windows using ace-window
+C-c r ;; Reload/revert buffer
+
+;; Running shell commands in buffers
+M-* ;; Run selected code as an async shell command
+M-| ;; Run current line as an async shell command
+M-& ;; Run an async shell command
+
+;; vterm commands
+C-c C-j ;; Switch to copy mode in vterm
+C-c C-k ;; Switch to normal vterm mode
+
+;; embark commands
+C-c . ;; Get a selection of things to do when in the minibuffer
+C-c ; ;; Open the minibuffer in a buffer
+
+;; consult commands
+C-c f ;; Switch to an alternate file in the current project using git-ls-files (only files in git repo)
+C-c g ;; Grep using ripgrep in the current project
+C-c s ;; Grep using git grep in the current project (only files in git repo)
+C-c l ;; grep over lines in current file
+
+;; lsp commands
+M-' ;; Find references to variables
+```
 
 ### Build emacs from source
 
