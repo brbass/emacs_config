@@ -68,6 +68,9 @@
           (lambda ()
             (setenv "OMP_NUM_THREADS" "1")))
 
+;; Avoid automatic splitting of windows vertically
+(setq split-height-threshold nil)
+
 ;; Ediff otherwise splits vertically
 (setq ediff-split-window-function 'split-window-horizontally)
 
@@ -210,6 +213,7 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 (use-package direnv
   :config
   (direnv-mode))
+(add-to-list 'warning-suppress-types '(direnv)) ;; otherwise opens warning buffer if direnv fails
 
 ;; Better color theme
 ;; (use-package gruvbox-theme
@@ -218,6 +222,11 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 (use-package nordic-night-theme
   :config
   (load-theme 'nordic-night t))
+
+;; Show available keybindings after prefix
+(use-package which-key
+  :config
+  (which-key-mode))
 
 ;; Vertico - incremental completion
 (use-package vertico
@@ -269,6 +278,25 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
   :defer t
   :bind (("C-c f" . consult-ls-git-ls-files)))
 
+;; Markdown support
+(use-package markdown-mode
+  :defer t
+  :mode (("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :config
+  (setq markdown-fontify-code-blocks-natively t
+        markdown-enable-math t
+        markdown-header-scaling t)
+  :custom-face
+  (markdown-header-face-1 ((t (:inherit font-lock-keyword-face :weight bold :underline t))))
+  (markdown-header-face-2 ((t (:inherit font-lock-function-name-face :weight bold))))
+  (markdown-header-face-3 ((t (:inherit font-lock-type-face :weight bold))))
+  (markdown-header-face-4 ((t (:inherit font-lock-constant-face :weight bold))))
+  (markdown-header-face-5 ((t (:inherit font-lock-variable-name-face :slant italic))))
+  (markdown-header-face-6 ((t (:inherit font-lock-comment-face :slant italic))))
+  (markdown-comment-face ((t (:inherit font-lock-comment-face :slant italic))))
+  (markdown-italic-face ((t (:inherit font-lock-builtin-face :slant italic)))))
+
 ;; Language server support
 (use-package lsp-mode
   :defer t
@@ -301,6 +329,21 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 
 (use-package flycheck
   :after lsp-mode)
+
+;; In-buffer completion popup (loads with LSP)
+(use-package corfu
+  :after lsp-mode
+  :init
+  (global-corfu-mode)
+  :config
+  (setq corfu-auto t
+        corfu-auto-delay 0.2
+        corfu-auto-prefix 2))
+
+(use-package corfu-terminal
+  :after corfu
+  :init
+  (corfu-terminal-mode))
 
 ;; LLM support
 (use-package agent-shell
