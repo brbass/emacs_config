@@ -149,11 +149,18 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
   (my/with-data-keys
    (let ((buf (my/async-shell-buffer-name command)))
      (async-shell-command command buf))))
+;; (defun my/async-shell-rerun ()
+;;   "Rerun the async shell command (buffer name) in current directory."
+;;   (interactive)
+;;   (let ((command (buffer-name)))
+;;     (async-shell-command command (current-buffer))))
 
 ;; Bind them!
 (global-set-key (kbd "M-*") 'my/async-send-current-region)
 (global-set-key (kbd "M-|") 'my/async-send-current-line)
 (global-set-key (kbd "M-&") 'my/async-shell-command)
+;; (with-eval-after-load 'simple
+;;   (define-key shell-command-mode-map (kbd "M-_") #'my/async-shell-rerun))
 
 ;; This imports bash variables for use in the shell
 (setq shell-file-name "bash")
@@ -254,9 +261,13 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
   :custom
   (completion-category-defaults nil)
   (completion-category-overrides '((file (styles orderless partial-completion))))
-  ;; (completion-styles '(orderless basic))
-  (completion-styles '(basic substring partial-completion flex))
-  (completion-pcm-leading-wildcard t))
+  (completion-styles '(orderless basic))
+  :config
+  (setq orderless-smart-case t)
+  (setq orderless-matching-styles
+        '(orderless-literal      ; exact substring (like substring)
+          orderless-flex         ; characters in order (like flex)
+          orderless-prefixes)))  ; initials at delimiters (like partial-completion)
 
 ;; Acting on selected files
 (use-package embark
@@ -272,7 +283,12 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
   :defer t
   :bind (("C-c g" . consult-ripgrep)
          ("C-c s" . consult-git-grep)
-         ("C-c l" . consult-line)))
+         ("C-c l" . consult-line))
+  :config
+  (setq consult-ripgrep-args
+        "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip")
+  (setq consult-git-grep-args
+        "git --no-pager grep --null --color=never --full-name --line-number -i"))
 
 (use-package consult-ls-git
   :defer t
