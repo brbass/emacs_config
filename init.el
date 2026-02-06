@@ -266,8 +266,17 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
   (setq orderless-smart-case t)
   (setq orderless-matching-styles
         '(orderless-literal      ; exact substring (like substring)
-          orderless-flex         ; characters in order (like flex)
           orderless-prefixes)))  ; initials at delimiters (like partial-completion)
+
+;; ;; Prescient - frecency sorting (best matches rise to top)
+;; (use-package prescient
+;;   :defer t)
+
+;; (use-package vertico-prescient
+;;   :after (vertico orderless prescient)
+;;   :config
+;;   (setq vertico-prescient-enable-filtering nil)  ; use orderless for filtering, prescient for sorting
+;;   (vertico-prescient-mode 1))
 
 ;; Acting on selected files
 (use-package embark
@@ -385,3 +394,19 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
 ;;-------------------------------------;;
 ;; Section for things added at runtime ;;
 ;;-------------------------------------;;
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(agent-shell consult-ls-git corfu-terminal direnv embark-consult
+                 flycheck lsp-pyright lsp-treemacs lsp-ui magit
+                 marginalia nordic-night-theme orderless prescient
+                 vertico vertico-prescient vterm ztree)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
