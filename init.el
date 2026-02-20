@@ -77,6 +77,23 @@
 ;; Use minibuffers in minibuffers!
 ;; (setf enable-recursive-minibuffers t)
 
+;; Use ibuffer for C-x C-b
+(use-package ibuffer
+  :ensure nil
+  :bind ("C-x C-b" . ibuffer)
+  :config
+  (setq ibuffer-expert t)
+  (define-key ibuffer-mode-map (kbd "M-o") nil)
+  :custom-face
+  (ibuffer-filter-group-name-face ((t (:inherit font-lock-keyword-face :bold t)))))
+(use-package ibuffer-project
+  :after ibuffer
+  :hook
+  (ibuffer . (lambda ()
+               (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+               (unless (eq ibuffer-sorting-mode 'project-file-relative)
+                 (ibuffer-do-sort-by-project-file-relative)))))
+
 ;;-----------------------------;;
 ;; Run commands in minibuffers ;;
 ;;-----------------------------;;
@@ -95,28 +112,29 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
                 (file-name-as-directory val))
             val))))))
 (defmacro my/with-data-keys (&rest body)
-  "Execute BODY in dir: and path: from Markdown buffer if present."
-  ;; Store the original variables and get the new ones
+  "Execute BODY in dir: and path: from Markdown buffer if present.
+Loads direnv for the target directory and ensures the resulting
+environment is inherited by subprocesses (e.g. async-shell-command)."
   `(let ((orig-dir default-directory)
          (dir (my/get-key "dir"))
          (new-path (my/get-key "path"))
-         (old-path (getenv "PATH")))
+         (old-path (getenv "PATH"))
+         (orig-env (copy-sequence process-environment)))
      (unwind-protect
          (progn
-           ;; If dir and path exist, then set them
+           ;; Load direnv for the target directory
            (when dir
              (setq default-directory dir)
              (when (fboundp 'direnv-update-environment)
-               (direnv-update-environment)))
-           (when new-path (setenv "PATH" (concat new-path ":" old-path)))
-           ;; Run the command
-           ,@body)
-       ;; If dir and path exist, then restore the original values
-       (when new-path (setenv "PATH" old-path))
-       (when dir
-         (setq default-directory orig-dir)
-         (when (fboundp 'direnv-update-environment)
-           (direnv-update-environment))))))
+               (direnv-update-environment dir)))
+           (when new-path (setenv "PATH" (concat new-path ":" (getenv "PATH"))))
+           ;; Let-bind process-environment so async subprocesses inherit it
+           (let ((process-environment (copy-sequence process-environment))
+                 (default-directory default-directory))
+             ,@body))
+       ;; Restore the original environment
+       (setq process-environment orig-env)
+       (setq default-directory orig-dir))))
 (defun my/async-shell-insert-command-header (buf command)
   "Insert COMMAND as a header at the top of BUF."
   (with-current-buffer buf
@@ -127,17 +145,20 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
   "Return a buffer name based on COMMAND, stripping leading spaces."
   (let ((trimmed (string-trim-left command)))
     trimmed))
+(defun my/strip-backticks (str)
+  "Remove leading/trailing backticks and whitespace from STR."
+  (string-trim (replace-regexp-in-string "`" "" str)))
 (defun my/async-send-current-line ()
   "Send the current line to an async shell command, running in dir: if present."
   (interactive)
-  (let ((line (thing-at-point 'line t)))
+  (let ((line (my/strip-backticks (thing-at-point 'line t))))
     (my/with-data-keys
      (let ((buf (my/async-shell-buffer-name line)))
        (async-shell-command line buf)))))
 (defun my/async-send-current-region (start end)
   "Send the current region to an async shell command, running in dir: if present."
   (interactive "r")
-  (let ((region-text (buffer-substring-no-properties start end)))
+  (let ((region-text (my/strip-backticks (buffer-substring-no-properties start end))))
     (my/with-data-keys
      (let ((buf (my/async-shell-buffer-name region-text)))
        (async-shell-command region-text buf)))))
@@ -146,9 +167,10 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
   (interactive
    (list (read-shell-command "Async shell command: "
                              nil 'shell-command-history)))
-  (my/with-data-keys
-   (let ((buf (my/async-shell-buffer-name command)))
-     (async-shell-command command buf))))
+  (let ((command (my/strip-backticks command)))
+    (my/with-data-keys
+     (let ((buf (my/async-shell-buffer-name command)))
+       (async-shell-command command buf)))))
 ;; (defun my/async-shell-rerun ()
 ;;   "Rerun the async shell command (buffer name) in current directory."
 ;;   (interactive)
@@ -214,7 +236,13 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
   :bind (:map vterm-mode-map
          ("C-c C-j" . vterm-copy-mode)
          :map vterm-copy-mode-map
-         ("C-c C-k" . vterm-copy-mode)))
+         ("C-c C-k" . vterm-copy-mode))
+  :config
+  (defun my/vterm-send-escape ()
+    "Send ESC to the terminal."
+    (interactive)
+    (vterm-send-string "\e"))
+  (define-key vterm-mode-map (kbd "M-e") #'my/vterm-send-escape))
 
 ;; For automatically loading direnv
 (use-package direnv
@@ -312,11 +340,21 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
   (setq markdown-fontify-code-blocks-natively t
         markdown-enable-math t
         markdown-header-scaling t)
+  ;; Override theme's hardcoded inline-code color
+  ;; Using font-lock-warning-face (orange/nord12). Alternatives:
+  ;;   font-lock-constant-face (blue/nord09)
+  ;;   font-lock-string-face (green/nord14)
+  ;;   warning (yellow/nord13)
+  ;;   font-lock-keyword-face (purple/nord15)
+  (set-face-attribute 'markdown-inline-code-face nil
+                      :foreground (face-foreground 'font-lock-keyword-face))
+  (set-face-attribute 'markdown-code-face nil
+                      :foreground (face-foreground 'font-lock-keyword-face))
   :custom-face
-  (markdown-header-face-1 ((t (:inherit font-lock-keyword-face :weight bold :underline t))))
-  (markdown-header-face-2 ((t (:inherit font-lock-function-name-face :weight bold))))
-  (markdown-header-face-3 ((t (:inherit font-lock-type-face :weight bold))))
-  (markdown-header-face-4 ((t (:inherit font-lock-constant-face :weight bold))))
+  (markdown-header-face-1 ((t (:inherit font-lock-constant-face :weight bold :underline t))))
+  (markdown-header-face-2 ((t (:inherit font-lock-type-face :weight bold))))
+  (markdown-header-face-3 ((t (:inherit font-lock-function-name-face :weight bold))))
+  (markdown-header-face-4 ((t (:inherit font-lock-preprocessor-face :weight bold))))
   (markdown-header-face-5 ((t (:inherit font-lock-variable-name-face :slant italic))))
   (markdown-header-face-6 ((t (:inherit font-lock-comment-face :slant italic))))
   (markdown-comment-face ((t (:inherit font-lock-comment-face :slant italic))))
@@ -401,9 +439,9 @@ Only searches Markdown buffers and returns only a valid directory if applicable.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    '(agent-shell consult-ls-git corfu-terminal direnv embark-consult
-                 flycheck lsp-pyright lsp-treemacs lsp-ui magit
-                 marginalia nordic-night-theme orderless prescient
-                 vertico vertico-prescient vterm ztree)))
+                 flycheck ibuffer-project lsp-pyright lsp-treemacs
+                 lsp-ui magit marginalia nordic-night-theme orderless
+                 prescient vertico vertico-prescient vterm ztree)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
