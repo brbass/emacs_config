@@ -99,9 +99,5 @@ git clone https://github.com/brbass/.emacs.d.git ~/.emacs.d
 
 ## Other setup notes
 
-- If a package is not found, run `M-x package-refresh-contents` and try opening emacs again. 
-- Not emacs-related, but the [ghostty terminal](https://ghostty.org/docs) needs the [following fix](https://ghostty.org/docs/help/terminfo#ssh) to use ssh:
-  ```bash
-  infocmp -x xterm-ghostty | ssh YOUR-SERVER -- tic -x -
-  ```
+- If a package is not found, run `M-x package-refresh-contents` and try opening emacs again.
 

@@ -191,8 +191,8 @@ environment is inherited by subprocesses (e.g. async-shell-command)."
 ;; (with-eval-after-load 'simple
 ;;   (define-key shell-command-mode-map (kbd "M-_") #'my/async-shell-rerun))
 
-;; This imports bash variables for use in the shell
-(setq shell-file-name "bash")
+;; Use zsh for shell commands (M-!, M-&, async-shell-command)
+(setq shell-file-name "zsh")
 (setq shell-command-switch "-ic")
 
 ;; To auto-hide the body in outline mode, add this line
@@ -336,6 +336,19 @@ environment is inherited by subprocesses (e.g. async-shell-command)."
 (use-package consult-ls-git
   :defer t
   :bind (("C-c f" . consult-ls-git-ls-files)))
+
+;; Quick project directory switching from any minibuffer (C-c d)
+(use-package consult-dir
+  :defer t
+  :bind (("C-c d" . consult-dir)
+         :map vertico-map
+         ("C-c d" . consult-dir))
+  :config
+  (setq consult-dir-default-command #'consult-dir-dired)
+  (setq consult-dir-sources
+        '(consult-dir--source-recentf
+          consult-dir--source-project
+          consult-dir--source-bookmark)))
 
 ;; Markdown support
 (use-package markdown-mode
