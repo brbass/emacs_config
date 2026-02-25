@@ -1,3 +1,9 @@
+;;---------------------------;;
+;; Avoid polluting this file ;;
+;;---------------------------;;
+(setq custom-file (locate-user-emacs-file "custom.el"))
+(load custom-file 'noerror)
+
 ;;-----------------;;
 ;; Deferred tuning ;;
 ;;-----------------;;
@@ -80,6 +86,7 @@
 ;; Use ibuffer for C-x C-b
 (use-package ibuffer
   :ensure nil
+  :defer t
   :bind ("C-x C-b" . ibuffer)
   :config
   (setq ibuffer-expert t)
@@ -200,7 +207,6 @@ environment is inherited by subprocesses (e.g. async-shell-command)."
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
-(package-initialize)
 
 ;; Bootstrap use-package
 (unless (package-installed-p 'use-package)
@@ -402,7 +408,6 @@ environment is inherited by subprocesses (e.g. async-shell-command)."
   (setq corfu-auto t
         corfu-auto-delay 0.2
         corfu-auto-prefix 2))
-
 (use-package corfu-terminal
   :after corfu
   :init
@@ -428,23 +433,3 @@ environment is inherited by subprocesses (e.g. async-shell-command)."
 ;;                        user-emacs-directory)))
 ;;   (when (file-exists-p host-init-file)
 ;;     (load-file host-init-file)))
-
-;;-------------------------------------;;
-;; Section for things added at runtime ;;
-;;-------------------------------------;;
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(agent-shell consult-ls-git corfu-terminal direnv embark-consult
-                 flycheck ibuffer-project lsp-pyright lsp-treemacs
-                 lsp-ui magit marginalia nordic-night-theme orderless
-                 prescient vertico vertico-prescient vterm ztree)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
