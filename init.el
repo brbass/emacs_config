@@ -248,7 +248,10 @@ environment is inherited by subprocesses (e.g. async-shell-command)."
     "Send ESC to the terminal."
     (interactive)
     (vterm-send-string "\e"))
-  (define-key vterm-mode-map (kbd "M-e") #'my/vterm-send-escape))
+  (define-key vterm-mode-map (kbd "M-e") #'my/vterm-send-escape)
+  (setq vterm-keymap-exceptions
+        '("C-c" "C-x" "C-u" "C-g" "C-h" "C-l" "M-x" "M-o"))
+  (vterm--exclude-keys vterm-mode-map vterm-keymap-exceptions))
 
 ;; For automatically loading direnv
 (use-package direnv
