@@ -243,15 +243,15 @@ environment is inherited by subprocesses (e.g. async-shell-command)."
          ("C-c C-j" . vterm-copy-mode)
          :map vterm-copy-mode-map
          ("C-c C-k" . vterm-copy-mode))
+  :init
+  (setq vterm-keymap-exceptions
+        '("C-c" "C-x" "C-u" "C-g" "C-h" "C-l" "M-x" "M-o"))
   :config
   (defun my/vterm-send-escape ()
     "Send ESC to the terminal."
     (interactive)
     (vterm-send-string "\e"))
-  (define-key vterm-mode-map (kbd "M-e") #'my/vterm-send-escape)
-  (setq vterm-keymap-exceptions
-        '("C-c" "C-x" "C-u" "C-g" "C-h" "C-l" "M-x" "M-o"))
-  (vterm--exclude-keys vterm-mode-map vterm-keymap-exceptions))
+  (define-key vterm-mode-map (kbd "M-e") #'my/vterm-send-escape))
 
 ;; For automatically loading direnv
 (use-package direnv
